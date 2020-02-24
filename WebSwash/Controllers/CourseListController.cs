@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using WebSwash.Models;
+using WebSwash.DAL;
 
 namespace WebSwash.Controllers
 {
@@ -13,36 +13,27 @@ namespace WebSwash.Controllers
     [Route("[controller]")]
     public class CourseListController : ControllerBase
     {
-        private readonly ILogger<CourseListController> _logger;
+        private readonly CourseRepository _courseRepository;
 
-        public CourseListController(ILogger<CourseListController> logger)
+        public CourseListController(ILogger<CourseListController> logger, CourseRepository courseRepository)
         {
-            _logger = logger;
+            _courseRepository = courseRepository;
         }
 
         [HttpGet("GetAll")]
         public IActionResult Get()
         {
-            using(CourseContext db = new CourseContext())
-            {
-                var course = db.Courses.ToList();
-                return new OkObjectResult(course);
-            }
+          return Ok(_courseRepository.GetAll());
         }
 
-        [HttpGet("GetId")]
+        [HttpGet("{id}", Name = "GetId")]
         public IActionResult Get(int id)
         {
-            Course course = new Course { Id = id };
-            using (CourseContext db = new CourseContext())
-            {
-                course = db.Courses.Find(id); 
-                return new OkObjectResult(course);
-            }
+            return Ok(_courseRepository.GetId(id));
         }
 
         [HttpPost("CreateCourse")]
-        public int CreateCourse(CreateCourseModel createCourseModel)
+        public IActionResult CreateCourse(CreateCourseModel createCourseModel)
         {
             Course course = new Course
             {
@@ -51,16 +42,12 @@ namespace WebSwash.Controllers
                 TeacherName = createCourseModel.TeacherName,
                 Inform = createCourseModel.Inform,
             };
-            using (CourseContext db = new CourseContext())
-            {
-                db.Courses.Add(course);
-                db.SaveChanges();
-            }
-            return  course.Id;
+            _courseRepository.Create(course);
+            return CreatedAtRoute("GetId", new { Id = course.Id }, course);
         }
 
         [HttpPut("UpdateCourse")]
-        public int UpdateCourse(UpdateCourseModel updateCourseModel, int id)
+        public IActionResult UpdateCourse(UpdateCourseModel updateCourseModel, int id)
         {
             Course course = new Course
             {
@@ -69,26 +56,18 @@ namespace WebSwash.Controllers
                 TeacherName = updateCourseModel.TeacherName,
                 Inform = updateCourseModel.Inform,
             };
-             using (CourseContext db = new CourseContext())
-            {
-                course = db.Courses.Find(id);
-                course.Subject = updateCourseModel.Subject;
-                course.TeacherName = updateCourseModel.TeacherName;
-                course.Inform = updateCourseModel.Inform;
-                db.SaveChanges();
-            }
-            return  course.Id;
+            //if (!Validator.IsValid(course))
+            //    return NotFound();
+            _courseRepository.Update(course, id);
+            return Ok();
         }
 
         [HttpDelete("DeleteId")]
-        public void Delete(int id)
+        public IActionResult Delete(int id)
         {
-            Course course = new Course { Id = id };
-            using (CourseContext db = new CourseContext())
-            {
-                db.Entry(course).State = EntityState.Deleted;
-                db.SaveChanges();
-            }
+            Course course = new Course { Id = id};
+            _courseRepository.Delete(course);
+            return  Ok();
         }
     }
 }

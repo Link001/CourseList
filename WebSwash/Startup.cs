@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using WebSwash.DAL;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebSwash
 {
@@ -21,6 +23,9 @@ namespace WebSwash
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
             });
+            var connectionString = Configuration.GetConnectionString("WebSwashContext");
+            services.AddDbContext<CourseContext>(options => options.UseSqlServer(connectionString));
+            services.AddScoped<CourseRepository>();
         }
 
         public void Configure(IApplicationBuilder app)
